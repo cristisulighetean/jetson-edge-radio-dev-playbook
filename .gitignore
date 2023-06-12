@@ -1,0 +1,8 @@
+.DS_Store
+*.retry
+roles*
+vars*
+config.yml
+
+# Log files
+*.log

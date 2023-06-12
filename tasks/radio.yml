@@ -1,0 +1,6 @@
+---
+- name: Install radio software
+  apt:
+    state: present
+    name:
+      - rtl-433

@@ -1,0 +1,8 @@
+# Common
+username: radio
+
+# Network
+ssid_local: wifi_network
+ssid_extern: wifi_network2
+net_pass: password
+net_interface: wlan0ls

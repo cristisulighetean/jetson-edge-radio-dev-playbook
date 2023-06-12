@@ -1,0 +1,75 @@
+---
+- name: Install network-manager
+  apt:
+    name: 
+      - network-manager
+    state: present
+
+# Ensure network-manager service is started and enabled
+- name: Make sure network-manager is started
+  service: 
+    name: network-manager
+    state: started
+    enabled: true
+
+# Create the local wifi connection using nmcli
+- name: Create the wifi connection
+  nmcli:
+    type: wifi
+    conn_name: local.wifi
+    ifname: "{{ net_interface }}"
+    ssid: "{{ ssid_local }}"
+    wifi_sec:
+      psk: "{{ net_pass }}"
+    autoconnect: true
+    state: present
+  ignore_errors: true  # Ignore errors in case the wifi is not reachable
+  async: 30
+  poll: 0
+  register: local_wifi_result
+
+# Check the status of the task creating local wifi connection
+- name: Check if we were able to connect to local_wifi
+  async_status:
+    jid: "{{ local_wifi_result.ansible_job_id }}"
+  register: internal_job_result
+  until: internal_job_result.finished
+  retries: 3  # Retry checking status up to 3 times
+  delay: 10  # Delay 10 seconds between retries
+  ignore_errors: true
+
+# Create the external wifi connection
+- name: Create the wifi connection (2nd network)
+  nmcli:
+    type: wifi
+    conn_name: local_ext.wifi
+    ifname: "{{ net_interface }}"
+    ssid: "{{ ssid_extern }}"
+    wifi_sec:
+      psk: "{{ net_pass }}"
+    autoconnect: true
+    state: present
+  ignore_errors: true
+  async: 30
+  poll: 0
+  register: external_wifi_result
+
+# Check the status of the task creating external wifi connection
+- name: Check if we were able to connect to local_ext.wifi
+  async_status:
+    jid: "{{ external_wifi_result.ansible_job_id }}"
+  register: external_job_result
+  until: external_job_result.finished
+  retries: 3
+  delay: 10
+  ignore_errors: true
+
+# Show current connections using nmcli command
+- name: Retrieve current connections
+  command: nmcli con show
+  register: net_connections
+
+# Display current connections using debug module
+- name: Display current connections
+  debug: 
+    var: net_connections.stdout
